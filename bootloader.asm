@@ -21,8 +21,8 @@ main:
     mov ss, ax
     ; moves the stack pointer down to the starting point of our application
     mov sp, 0x7C00 
-    ;mov si, os_boot_msg
-    ;call print
+    mov si, os_boot_msg
+    call print
 	; pauses CPU until it reaches an interrupt
 	HLT
 
@@ -55,11 +55,30 @@ done_print:
     pop bx
     pop ax
     pop si
+
+    mov al, "A"
+    mov ah, 0x0e
+    int 0x10
+alphabet:
+    ; if we are at > 61 for ascii values, we need to subtract
+    cmp al, 97
+    jge greater
+    add al, 33
+    jmp printing
+greater:
+    sub al, 31
+printing:
+    cmp al, "z" - 31
+    je done
+    int 0x10
+    jmp alphabet
+
+done:
     ret
 os_boot_msg: DB "Our OS has booted!", 0x0D, 0x0A, 0
 ; The $-$$ tells us how many bytes our program takes up.
 ; We take 510 minus that value to get us to the location 510 in memory
 ; DB 0 means we write a bunch of 0s until we get to where we want in memory
-TIMES 510-($-$$) DB 0
+times 510-($-$$) db 0
 ;signature that we want to write, which is what the BIOS is searching for
-DW 0AA55h
+dw 0AA55h
