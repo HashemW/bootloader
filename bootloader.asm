@@ -23,8 +23,11 @@ main:
     mov sp, 0x7C00 
     mov si, os_boot_msg
     call print
+
+    mov bx, variableName
+    call print_string
 	; pauses CPU until it reaches an interrupt
-	HLT
+	hlt
 
 	; we want to make sure that it doesnt stop at the interrupt
 halt:
@@ -32,16 +35,15 @@ halt:
 
 print:
     ; push all these registers onto the stack
-    push si
     push ax
-    push bx
+    push si
 
 print_loop:
     ; loads a single byte in the al register from si?
     LODSB
     ;check if the value loaded =0, if it was we are at the end of the string
     or al,al
-    jz done_print
+    jz print_done
     
     ; represents printing a character to the screen
     mov ah, 0x0E
@@ -51,31 +53,30 @@ print_loop:
     int 0x10
 
     jmp print_loop
-done_print:
+
+print_done:
+    pop si
+    pop ax
+    ret
+print_string:
+    push ax
+    push bx
+print_string_loop:
+    mov al, [bx]
+    cmp al, 0
+    je done
+    mov ah, 0x0E
+    int 0x10
+    inc bx
+    jmp print_string
+variableName:
+    db "But the fool on the hill", 0
+done:
     pop bx
     pop ax
     pop si
-
-    mov al, "A"
-    mov ah, 0x0e
-    int 0x10
-alphabet:
-    ; if we are at > 61 for ascii values, we need to subtract
-    cmp al, 97
-    jge greater
-    add al, 33
-    jmp printing
-greater:
-    sub al, 31
-printing:
-    cmp al, "z" - 31
-    je done
-    int 0x10
-    jmp alphabet
-
-done:
     ret
-os_boot_msg: DB "Our OS has booted!", 0x0D, 0x0A, 0
+os_boot_msg: db "Our OS has booted!", 0x0D, 0x0A, 0
 ; The $-$$ tells us how many bytes our program takes up.
 ; We take 510 minus that value to get us to the location 510 in memory
 ; DB 0 means we write a bunch of 0s until we get to where we want in memory
